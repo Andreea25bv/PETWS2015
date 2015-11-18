@@ -327,9 +327,9 @@ def mix_client_n_hop(public_keys, address, message, use_blinding_factor=False):
                 # Ensure the IV is different for each hmac
                 iv = pack("H14s", i, b"\x00"*14)
                 hmac_enc = aes_ctr_enc_dec(hmac_key, iv, other_mac)
-	    	    h.update(other_mac)	
+	    	h.update(other_mac)	
                 new_macs.append(hmac_enc)
-	    	    print "new_hmacs count: " + str(len(new_macs))	
+	    	print "new_hmacs count: " + str(len(new_macs))	
 
 	h.update(address_cipher)
         h.update(message_cipher)

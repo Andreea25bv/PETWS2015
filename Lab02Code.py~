@@ -189,7 +189,7 @@ def mix_server_n_hop(private_key, message_list, use_blinding_factor=False, final
     G = EcGroup()
 
     out_queue = []
-    print "run server ----hop " +str(len(message_list[0].hmacs%1))+"-----"
+    print "run server ----hop " +str(len(message_list[0].hmacs)%10)+"-----"
     		
     # Process all messages
     for msg in message_list:
@@ -304,7 +304,7 @@ def mix_client_n_hop(public_keys, address, message, use_blinding_factor=False):
     for i in range(keys_count-1,-1,-1):
 	new_macs = []	
 	key = public_keys[i]
-	print " -----< encode for hop #"+ str(i) + ">-------"
+	print " -----< encode for hop "+ str(i) + ">-------"
         encryption_key = private_key * key
         ek = sha512(encryption_key.export()).digest()        
 	
@@ -323,15 +323,13 @@ def mix_client_n_hop(public_keys, address, message, use_blinding_factor=False):
 	
 	        		
 	if(len(hmacs)>0):	
-       		for i, other_mac in enumerate(hmacs[0:]):
-	    		#print "i: " + str(i) 	
-            		# Ensure the IV is different for each hmac
-            		iv = pack("H14s", i, b"\x00"*14)
-            		hmac_enc = aes_ctr_enc_dec(hmac_key, iv, other_mac)
-	    		h.update(other_mac)	
-            		new_macs.append(hmac_enc)
-	    		#hmacs[i+1] = hmac_enc
-	    		#print "new_hmacs count: " + str(len(new_macs))	
+       	    for i, other_mac in enumerate(hmacs):
+                # Ensure the IV is different for each hmac
+                iv = pack("H14s", i, b"\x00"*14)
+                hmac_enc = aes_ctr_enc_dec(hmac_key, iv, other_mac)
+	    	h.update(other_mac)	
+                new_macs.append(hmac_enc)
+	    	print "new_hmacs count: " + str(len(new_macs))	
 
 	h.update(address_cipher)
         h.update(message_cipher)
