@@ -304,7 +304,7 @@ def mix_client_n_hop(public_keys, address, message, use_blinding_factor=False):
     for i in range(keys_count-1,-1,-1):
 	new_macs = []	
 	key = public_keys[i]
-	print " -----< encode for hop #"+ str(i) + ">-------"
+	print " -----< encode for hop "+ str(i) + ">-------"
         encryption_key = private_key * key
         ek = sha512(encryption_key.export()).digest()        
 	
