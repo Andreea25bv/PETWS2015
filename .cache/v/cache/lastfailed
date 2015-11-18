@@ -1,0 +1,4 @@
+{
+  "Lab02Tests.py::test_Alice_encode_10_hop_wo_blinding_factor": true, 
+  "Lab02Tests.py::test_Alice_encode_3_hop_wo_blinding_factor": true
+}
