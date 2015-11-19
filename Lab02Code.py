@@ -189,11 +189,10 @@ def mix_server_n_hop(private_key, message_list, use_blinding_factor=False, final
     G = EcGroup()
 
     out_queue = []
-    print "run server ----hop " +str(len(message_list[0].hmacs)%10)+"-----"
-    		
+		
     # Process all messages
     for msg in message_list:
-	#print "serv hmacs count: " + str(len(msg.hmacs))	
+	
         ## Check elements and lengths
         if not G.check_point(msg.ec_public_key) or \
                not isinstance(msg.hmacs, list) or \
@@ -205,7 +204,7 @@ def mix_server_n_hop(private_key, message_list, use_blinding_factor=False, final
         ## First get a shared key
         shared_element = private_key * msg.ec_public_key
         key_material = sha512(shared_element.export()).digest()
-
+	
         # Use different parts of the shared key for different operations
         hmac_key = key_material[:16]
         address_key = key_material[16:32]
@@ -229,15 +228,17 @@ def mix_server_n_hop(private_key, message_list, use_blinding_factor=False, final
         h.update(msg.message)
 
         expected_mac = h.digest()
-	print "\n"
+	
 	#print "server hmac_key  : ", hmac_key
-	#print "server adr_cipher: ", msg.address[:50]
-	#print "server msg_cipher: ", msg.message[:50]	
-	print "server server_mac: ", expected_mac[:20]  
-
+	#print "server addr_key  : ", address_key
+	#print "server mesg_key  : ", message_key
+	
+	#print "server adr_cipher: ", msg.address[:75]
+	#print "server msg_cipher: ", msg.message[:75]
+	
         if not secure_compare(msg.hmacs[0], expected_mac[:20]):
             raise Exception("HMAC check failure")
-
+	
         ## Decrypt the hmacs, address and the message
         aes = Cipher("AES-128-CTR") 
 	
@@ -304,7 +305,7 @@ def mix_client_n_hop(public_keys, address, message, use_blinding_factor=False):
     for i in range(keys_count-1,-1,-1):
 	new_macs = []	
 	key = public_keys[i]
-	print " -----< encode for hop "+ str(i) + ">-------"
+
         encryption_key = private_key * key
         ek = sha512(encryption_key.export()).digest()        
 	
@@ -314,9 +315,14 @@ def mix_client_n_hop(public_keys, address, message, use_blinding_factor=False):
         message_key = ek[32:48]
 	
         #encrypt for this hop
-        iv = b"\x00"*16
-        address_cipher = aes_ctr_enc_dec(address_key, iv, address_plaintext)            
-        message_cipher = aes_ctr_enc_dec(message_key, iv, message_plaintext)
+        iv = b"\x00"*16	
+	
+	if (i == keys_count-1): # last hop before destination
+        	address_cipher = aes_ctr_enc_dec(address_key, iv, address_plaintext)            
+        	message_cipher = aes_ctr_enc_dec(message_key, iv, message_plaintext)
+	else:
+        	address_cipher = aes_ctr_enc_dec(address_key, iv, address_cipher)            
+        	message_cipher = aes_ctr_enc_dec(message_key, iv, message_cipher)		
 
         #calculate mac for this hop        
         h = Hmac(b"sha512", hmac_key)
@@ -327,20 +333,25 @@ def mix_client_n_hop(public_keys, address, message, use_blinding_factor=False):
                 # Ensure the IV is different for each hmac
                 iv = pack("H14s", i, b"\x00"*14)
                 hmac_enc = aes_ctr_enc_dec(hmac_key, iv, other_mac)
-	    	h.update(other_mac)	
+	    	h.update(hmac_enc)	
                 new_macs.append(hmac_enc)
-	    	print "new_hmacs count: " + str(len(new_macs))	
+	    	#print "new_hmacs count: " + str(len(new_macs))	
 
 	h.update(address_cipher)
         h.update(message_cipher)
         expected_mac = h.digest()
 	expected_mac = expected_mac[:20]	
-        	 
+	
+	#print "server hmac_key  : ", hmac_key
+	#print "client addr_key  : ", address_key
+	#print "server mesg_key  : ", message_key
+
+	#print "client adr_cipher: ", address_cipher[:75]
+	#print "client msg_cipher: ", message_cipher[:75]
+	
 	new_macs.insert(0,expected_mac)
-	#print "new macs: " + str(new_macs)	
 	hmacs = new_macs
-	print "hmacs count: " + str(len(hmacs))
-	print "client client_mac: ", expected_mac
+	#print "client client_mac: ", expected_mac
 		
     return NHopMixMessage(client_public_key, hmacs, address_cipher, message_cipher)
 
